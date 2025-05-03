@@ -30,17 +30,5 @@ namespace TextEditor.Models
         {
             content.Remove(position, length);
         }
-
-        public void ApplyBold(int start, int length)
-        {
-            content.Insert(start + length, "**");
-            content.Insert(start, "**");
-        }
-
-        public void ApplyItalic(int start, int length)
-        {
-            content.Insert(start + length, "*");
-            content.Insert(start, "*");
-        }
     }
 }
