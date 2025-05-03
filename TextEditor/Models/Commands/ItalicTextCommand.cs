@@ -2,11 +2,11 @@
 
 namespace TextEditor.Models.Commands
 {
-    public class BoldTextCommand : Command
+    public class ItalicTextCommand : Command
     {
         private int start, length;
 
-        public BoldTextCommand(TextBox editText, Document document) : base(editText, document) 
+        public ItalicTextCommand(TextBox editText, Document document) : base(editText, document)
         {
             start = _editTextBox.SelectionStart;
             length = _editTextBox.SelectionLength;
@@ -14,16 +14,16 @@ namespace TextEditor.Models.Commands
 
         public override void Execute()
         {
-            _document.InsertText("**", start + length);
-            _document.InsertText("**", start);
+            _document.InsertText("*", start + length);
+            _document.InsertText("*", start);
             _editTextBox.Text = _document.Content;
-            _editTextBox.CaretIndex = start + length + 2;        
+            _editTextBox.CaretIndex = start + length + 1;
         }
 
         public override void Undo()
         {
-            _document.DeleteText(start + length + 2, 2);
-            _document.DeleteText(start, 2);
+            _document.DeleteText(start + length + 1, 1);
+            _document.DeleteText(start, 1);
             _editTextBox.Text = _document.Content;
             _editTextBox.CaretIndex = start;
         }
