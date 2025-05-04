@@ -11,7 +11,7 @@ namespace TextEditor.UserControls
     /// </summary>
     public partial class PreviewUserControl : UserControl
     {
-        public PreviewUserControl(Models.Document document)
+        public PreviewUserControl(Document document)
         {
             InitializeComponent();
             currentDocument = document;

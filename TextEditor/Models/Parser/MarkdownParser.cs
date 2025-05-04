@@ -6,28 +6,6 @@ namespace TextEditor.Models.Parser
 {
     public class MarkdownParser
     {
-        private readonly Dictionary<int, Style> _headerStyles = new Dictionary<int, Style>();
-
-        public MarkdownParser()
-        {
-            InitializeStyles();
-        }
-
-        private void InitializeStyles()
-        {
-            for (int i = 1; i <= 6; i++)
-            {
-                _headerStyles[i] = new Style(typeof(Paragraph))
-                {
-                    Setters = {
-                        new Setter(Paragraph.FontWeightProperty, FontWeights.Bold),
-                        new Setter(Paragraph.FontSizeProperty, 26 - (i * 2)),
-                        new Setter(Paragraph.MarginProperty, new Thickness(0, 10, 0, 5))
-                    }
-                };
-            }
-        }
-
         public FlowDocument Parse(string markdownText)
         {
             FlowDocument document = new FlowDocument();
@@ -48,35 +26,16 @@ namespace TextEditor.Models.Parser
                 Match headerMatch = Regex.Match(line, @"^(#{1,6})\s+(.+)$");
                 if (headerMatch.Success)
                 {
-                    int headerLevel = headerMatch.Groups[1].Length;
-                    string headerText = headerMatch.Groups[2].Value;
-
-                    Paragraph header = new Paragraph();
-                    foreach (var inline in ParseInlineMarkdown(headerText))
-                    {
-                        header.Inlines.Add(inline);
-                    }
-
-                    header.FontWeight = FontWeights.Bold;
-                    header.FontSize = 26 - (headerLevel * 2);
-                    header.Margin = new Thickness(0, 10, 0, 5);
-
-                    block = header;
+                    block = GetHeader(headerMatch);
                     lineIndex++;
                 }
                 else if (line.TrimStart().StartsWith("- "))
                 {
-                    List list = new List() { MarkerStyle = TextMarkerStyle.Disc, Margin = new Thickness(5, 5, 0, 5) };
+                    List list = new List();
 
                     while (lineIndex < lines.Length && lines[lineIndex].TrimStart().StartsWith("- "))
                     {
-                        string listItemText = lines[lineIndex].TrimStart().Substring(2);
-                        var paragraph = new Paragraph();
-                        foreach (var inline in ParseInlineMarkdown(listItemText))
-                        {
-                            paragraph.Inlines.Add(inline);
-                        }
-                        ListItem item = new ListItem(paragraph);
+                        ListItem item = GetListItem(lines[lineIndex]);
                         list.ListItems.Add(item);
                         lineIndex++;
                     }
@@ -87,9 +46,7 @@ namespace TextEditor.Models.Parser
                 {
                     List<string> paragraphLines = new List<string>();
 
-                    while (lineIndex < lines.Length && !string.IsNullOrWhiteSpace(lines[lineIndex]) &&
-                          !Regex.IsMatch(lines[lineIndex], @"^#{1,6}\s+") &&
-                          !lines[lineIndex].TrimStart().StartsWith("- "))
+                    while (lineIndex < lines.Length && IsSimpleText(lines[lineIndex]))
                     {
                         paragraphLines.Add(lines[lineIndex]);
                         lineIndex++;
@@ -98,12 +55,12 @@ namespace TextEditor.Models.Parser
                     if (paragraphLines.Count > 0)
                     {
                         string paragraphText = string.Join(" ", paragraphLines);
-                        var par = new Paragraph();
+                        var paragraph = new Paragraph();
                         foreach (var inline in ParseInlineMarkdown(paragraphText))
                         {
-                            par.Inlines.Add(inline);
+                            paragraph.Inlines.Add(inline);
                         }
-                        block = par;
+                        block = paragraph;
                     }
                     else
                     {
@@ -145,7 +102,7 @@ namespace TextEditor.Models.Parser
                     currentPosition += boldMatch.Index + boldMatch.Length;
                     continue;
                 }
-                
+
                 Match italicMatch = Regex.Match(text.Substring(currentPosition), @"^\*(.+?)\*");
                 if (italicMatch.Success)
                 {
@@ -189,6 +146,42 @@ namespace TextEditor.Models.Parser
             };
 
             return positions.Where(p => p >= 0).DefaultIfEmpty(-1).Min();
+        }
+
+        private Block GetHeader(Match headerMatch)
+        {
+            int headerLevel = headerMatch.Groups[1].Length;
+            string headerText = headerMatch.Groups[2].Value;
+
+            Paragraph header = new Paragraph();
+            foreach (var inline in ParseInlineMarkdown(headerText))
+            {
+                header.Inlines.Add(inline);
+            }
+
+            header.FontWeight = FontWeights.Bold;
+            header.FontSize = 26 - (headerLevel * 2);
+            header.Margin = new Thickness(0, 10, 0, 5);
+
+            return header;
+        }
+
+        private ListItem GetListItem(string line)
+        {
+            string listItemText = line.TrimStart().Substring(2);
+            var paragraph = new Paragraph();
+            foreach (var inline in ParseInlineMarkdown(listItemText))
+            {
+                paragraph.Inlines.Add(inline);
+            }
+            return new ListItem(paragraph);
+        }
+
+        private bool IsSimpleText(string text)
+        {
+            return !string.IsNullOrWhiteSpace(text) 
+                && !Regex.IsMatch(text, @"^#{1,6}\s+") 
+                && !text.TrimStart().StartsWith("- ");
         }
     }
 }
