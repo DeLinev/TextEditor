@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MainWindow}"
         Title="TextEditor" Height="450" Width="800">
-    <Grid Background="LightBlue">
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10" />
             <ColumnDefinition Width="200" />

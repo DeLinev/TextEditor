@@ -29,7 +29,7 @@ namespace TextEditor.Models.Commands
             }
 
             _editTextBox.Text = _document.Content;
-            _editTextBox.CaretIndex = _document.Content.Length;
+            _editTextBox.CaretIndex = insertPos + 2;
         }
 
 
