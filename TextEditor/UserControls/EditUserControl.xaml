@@ -70,6 +70,7 @@
            TextWrapping="Wrap"
            VerticalScrollBarVisibility="Auto"
            TextChanged="EditTextBox_TextChanged"
-           PreviewKeyDown="EditTextBox_PreviewKeyDown"/>
+           PreviewKeyDown="EditTextBox_PreviewKeyDown"
+           Padding="5"/>
     </Grid>
 </UserControl>

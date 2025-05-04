@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using TextEditor.Models;
 using TextEditor.UserControls;
 
 namespace TextEditor
@@ -15,7 +16,7 @@ namespace TextEditor
             InitializeComponent();
             DataContext = this;
             userControlFactory = new UserControlFactory();
-            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, SwitchUserControl);
+            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, new Document(), SwitchUserControl);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -37,9 +38,9 @@ namespace TextEditor
             }
         }
 
-        private void SwitchUserControl(UserControlTypes userControl)
+        private void SwitchUserControl(UserControlTypes userControl, Document document)
         {
-            CurrentUserControl = userControlFactory.CreateUserControl(userControl, SwitchUserControl);
+            CurrentUserControl = userControlFactory.CreateUserControl(userControl, document, SwitchUserControl);
         }
     }
 }

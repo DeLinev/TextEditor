@@ -11,10 +11,10 @@ namespace TextEditor.UserControls
     /// </summary>
     public partial class EditUserControl : UserControl
     {
-        public EditUserControl(string? path = null)
+        public EditUserControl(Document document)
         {
             InitializeComponent();
-            CurrentDocument = new Document(path);
+            CurrentDocument = document;
             UndoStack = new Stack<Command>();
         }
 
@@ -22,7 +22,7 @@ namespace TextEditor.UserControls
         public Document CurrentDocument { get; set; }
         public Stack<Command> UndoStack { get; set; }
 
-        public event Action<UserControlTypes> UserControlSwitched;
+        public event Action<UserControlTypes, Document> UserControlSwitched;
 
         public void ExecuteCommand(Command command)
         {
@@ -48,7 +48,7 @@ namespace TextEditor.UserControls
 
         private void PreviewBtn_Click(object sender, RoutedEventArgs e)
         {
-            UserControlSwitched?.Invoke(UserControlTypes.Preview);
+            UserControlSwitched?.Invoke(UserControlTypes.Preview, CurrentDocument);
         }
 
         private void BoldBtn_Click(object sender, RoutedEventArgs e)
