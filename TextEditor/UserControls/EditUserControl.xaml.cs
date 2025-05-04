@@ -1,8 +1,11 @@
-﻿using System.Windows;
+﻿using Microsoft.Win32;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using TextEditor.Models;
 using TextEditor.Models.Commands;
+using TextEditor.Models.FileManager;
 
 namespace TextEditor.UserControls
 {
@@ -11,11 +14,17 @@ namespace TextEditor.UserControls
     /// </summary>
     public partial class EditUserControl : UserControl
     {
-        public EditUserControl(Document document)
+        public EditUserControl(Document? document)
         {
             InitializeComponent();
+            if (document == null)
+            {
+                DisableUI();
+            }
+
             CurrentDocument = document;
             UndoStack = new Stack<Command>();
+            EditTextBox.Text = CurrentDocument?.Content ?? string.Empty;
         }
 
         private bool isExecutingCommand = false;
@@ -115,5 +124,60 @@ namespace TextEditor.UserControls
             ExecuteCommand(command);
         }
 
+        private void DisableUI()
+        {
+            EditTextBox.IsEnabled = false;
+            BoldBtn.IsEnabled = false;
+            ItalicBtn.IsEnabled = false;
+            HeaderBtn.IsEnabled = false;
+            ListBtn.IsEnabled = false;
+            UndoBtn.IsEnabled = false;
+            EditBtn.IsEnabled = false;
+            PreviewBtn.IsEnabled = false;
+            SaveBtn.IsEnabled = false;
+            EditTextBox.Background = Brushes.LightGray;
+            EditTextBox.Foreground = Brushes.Gray;
+        }
+
+        private void EnableUI()
+        {
+            EditTextBox.IsEnabled = true;
+            BoldBtn.IsEnabled = true;
+            ItalicBtn.IsEnabled = true;
+            HeaderBtn.IsEnabled = true;
+            ListBtn.IsEnabled = true;
+            UndoBtn.IsEnabled = true;
+            EditBtn.IsEnabled = true;
+            PreviewBtn.IsEnabled = true;
+            SaveBtn.IsEnabled = true;
+            EditTextBox.Background = Brushes.White;
+            EditTextBox.Foreground = Brushes.Black;
+        }
+
+        private async void SaveBtn_Click(object sender, RoutedEventArgs e)
+        {
+            var fileManager = new FileManager();
+            var saveFileDialog = new SaveFileDialog 
+            {
+                Filter = fileManager.FileFilter,
+                DefaultExt = ".md",
+                FileName = CurrentDocument?.Path ?? "Untitled"
+            };
+
+            bool? result = saveFileDialog.ShowDialog();
+            if (result == true)
+            {
+                string filePath = saveFileDialog.FileName;
+                bool isSaved = await fileManager.Save(filePath, EditTextBox.Text, null);
+                if (isSaved)
+                {
+                    MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }
