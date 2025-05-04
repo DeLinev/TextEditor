@@ -9,10 +9,10 @@ namespace TextEditor.Models
 
         private StringBuilder content;
 
-        public Document(string? path = null)
+        public Document(string? path = null, string initialContent = "")
         {
             Path = path;
-            content = new StringBuilder();
+            content = new StringBuilder(initialContent);
         }
 
         public void ChangeContent(string newContent)

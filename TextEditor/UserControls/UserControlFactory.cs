@@ -6,23 +6,18 @@ namespace TextEditor.UserControls
 {
     public interface IUserControlFactory
     {
-        UserControl CreateUserControl(UserControlTypes userControl, Document document, Action<UserControlTypes, Document> userControlHandler);
+        UserControl CreateUserControl(UserControlTypes userControl, Document? document, Action<UserControlTypes, Document> userControlHandler);
     }
 
     public class UserControlFactory : IUserControlFactory
     {
-        private EditUserControl? editUserControl;
-
-        public UserControl CreateUserControl(UserControlTypes userControl, Document document, Action<UserControlTypes, Document> userControlHandler)
+        public UserControl CreateUserControl(UserControlTypes userControl, Document? document, Action<UserControlTypes, Document> userControlHandler)
         {
             switch (userControl)
             {
                 case UserControlTypes.Edit:
-                    if (editUserControl == null)
-                    {
-                        editUserControl = new EditUserControl(document);
-                        editUserControl.UserControlSwitched += userControlHandler;
-                    }
+                    var editUserControl = new EditUserControl(document);
+                    editUserControl.UserControlSwitched += userControlHandler;
                     return editUserControl;
 
                 case UserControlTypes.Preview:
