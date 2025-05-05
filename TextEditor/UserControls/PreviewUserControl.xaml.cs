@@ -33,6 +33,7 @@ namespace TextEditor.UserControls
             if (currentDocument != null)
             {
                 FlowDocument doc = markdownParser.Parse(currentDocument.Content);
+                doc.TextAlignment = TextAlignment.Left;
                 PreviewRichTextBox.Document = doc;
             }
         }

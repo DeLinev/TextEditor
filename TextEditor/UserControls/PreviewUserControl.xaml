@@ -40,6 +40,11 @@
             </StackPanel>
         </Grid>
 
-        <FlowDocumentScrollViewer Grid.Row="1" x:Name="PreviewRichTextBox" VerticalScrollBarVisibility="Auto" />
+        <FlowDocumentScrollViewer 
+            Grid.Row="1" 
+            x:Name="PreviewRichTextBox" 
+            VerticalScrollBarVisibility="Auto" 
+            HorizontalContentAlignment="Left">
+        </FlowDocumentScrollViewer>
     </Grid>
 </UserControl>

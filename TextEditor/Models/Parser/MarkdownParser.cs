@@ -8,71 +8,12 @@ namespace TextEditor.Models.Parser
     {
         public FlowDocument Parse(string markdownText)
         {
-            FlowDocument document = new FlowDocument();
-
             if (string.IsNullOrEmpty(markdownText))
-                return document;
+                return new FlowDocument();
 
-            string[] lines = markdownText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-
-            int lineIndex = 0;
-            List<Block> blocks = new List<Block>();
-
-            while (lineIndex < lines.Length)
-            {
-                string line = lines[lineIndex];
-                Block? block = null;
-
-                Match headerMatch = Regex.Match(line, @"^(#{1,6})\s+(.+)$");
-                if (headerMatch.Success)
-                {
-                    block = GetHeader(headerMatch);
-                    lineIndex++;
-                }
-                else if (line.TrimStart().StartsWith("- "))
-                {
-                    List list = new List();
-
-                    while (lineIndex < lines.Length && lines[lineIndex].TrimStart().StartsWith("- "))
-                    {
-                        ListItem item = GetListItem(lines[lineIndex]);
-                        list.ListItems.Add(item);
-                        lineIndex++;
-                    }
-
-                    block = list;
-                }
-                else
-                {
-                    List<string> paragraphLines = new List<string>();
-
-                    while (lineIndex < lines.Length && IsSimpleText(lines[lineIndex]))
-                    {
-                        paragraphLines.Add(lines[lineIndex]);
-                        lineIndex++;
-                    }
-
-                    if (paragraphLines.Count > 0)
-                    {
-                        string paragraphText = string.Join(" ", paragraphLines);
-                        var paragraph = new Paragraph();
-                        foreach (var inline in ParseInlineMarkdown(paragraphText))
-                        {
-                            paragraph.Inlines.Add(inline);
-                        }
-                        block = paragraph;
-                    }
-                    else
-                    {
-                        lineIndex++;
-                    }
-                }
-
-                if (block != null)
-                {
-                    blocks.Add(block);
-                }
-            }
+            var document = new FlowDocument();
+            var lines = markdownText.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+            var blocks = ParseBlocks(lines);
 
             foreach (var block in blocks)
             {
@@ -82,37 +23,139 @@ namespace TextEditor.Models.Parser
             return document;
         }
 
+        private IEnumerable<Block> ParseBlocks(string[] lines)
+        {
+            var blocks = new List<Block>();
+            int lineIndex = 0;
+
+            while (lineIndex < lines.Length)
+            {
+                string line = lines[lineIndex];
+                Block? block = null;
+
+                if (TryParseHeader(line, out block))
+                {
+                    lineIndex++;
+                }
+                else if (TryParseList(lines, ref lineIndex, out block)) { }
+                else if (TryParseParagraph(lines, ref lineIndex, out block)) { }
+                else
+                {
+                    lineIndex++;
+                }
+
+                if (block != null)
+                {
+                    blocks.Add(block);
+                }
+            }
+
+            return blocks;
+        }
+
+        private bool TryParseHeader(string line, out Block? block)
+        {
+            var headerMatch = Regex.Match(line, @"^(#{1,6})\s+(.+)$");
+            if (headerMatch.Success)
+            {
+                block = CreateHeaderBlock(headerMatch);
+                return true;
+            }
+
+            block = null;
+            return false;
+        }
+
+        private bool TryParseList(string[] lines, ref int lineIndex, out Block? block)
+        {
+            if (lines[lineIndex].TrimStart().StartsWith("- "))
+            {
+                var list = new List();
+
+                while (lineIndex < lines.Length && lines[lineIndex].TrimStart().StartsWith("- "))
+                {
+                    list.ListItems.Add(CreateListItem(lines[lineIndex]));
+                    lineIndex++;
+                }
+
+                block = list;
+                return true;
+            }
+
+            block = null;
+            return false;
+        }
+
+        private bool TryParseParagraph(string[] lines, ref int lineIndex, out Block? block)
+        {
+            var paragraphLines = new List<string>();
+
+            while (lineIndex < lines.Length && IsSimpleText(lines[lineIndex]))
+            {
+                paragraphLines.Add(lines[lineIndex]);
+                lineIndex++;
+            }
+
+            if (paragraphLines.Count > 0)
+            {
+                block = CreateParagraphBlock(paragraphLines);
+                return true;
+            }
+
+            block = null;
+            return false;
+        }
+
+        private Paragraph CreateHeaderBlock(Match headerMatch)
+        {
+            int headerLevel = headerMatch.Groups[1].Length;
+            string headerText = headerMatch.Groups[2].Value;
+
+            var header = new Paragraph
+            {
+                FontWeight = FontWeights.Bold,
+                FontSize = 26 - (headerLevel * 2),
+                Margin = new Thickness(0, 10, 0, 5)
+            };
+
+            foreach (var inline in ParseInlineMarkdown(headerText))
+            {
+                header.Inlines.Add(inline);
+            }
+
+            return header;
+        }
+
+        private ListItem CreateListItem(string line)
+        {
+            string listItemText = line.TrimStart().Substring(2);
+            var paragraph = CreateParagraphBlock(new[] { listItemText });
+            return new ListItem(paragraph);
+        }
+
+        private Paragraph CreateParagraphBlock(IEnumerable<string> lines)
+        {
+            var paragraph = new Paragraph();
+            string paragraphText = string.Join(" ", lines);
+
+            foreach (var inline in ParseInlineMarkdown(paragraphText))
+            {
+                paragraph.Inlines.Add(inline);
+            }
+
+            return paragraph;
+        }
+
         private List<Inline> ParseInlineMarkdown(string text)
         {
-            List<Inline> inlines = new List<Inline>();
-
+            var inlines = new List<Inline>();
             int currentPosition = 0;
 
             while (currentPosition < text.Length)
             {
-                Match boldMatch = Regex.Match(text.Substring(currentPosition), @"^\*\*(.+?)\*\*");
-                if (boldMatch.Success)
+                if (TryParseInlineElement(text, ref currentPosition, @"^\*\*(.+?)\*\*", boldText => new Bold(new Run(boldText)), inlines) ||
+                    TryParseInlineElement(text, ref currentPosition, @"^\*(.+?)\*", italicText => new Italic(new Run(italicText)), inlines))
                 {
-                    if (boldMatch.Index > 0)
-                    {
-                        inlines.Add(new Run(text.Substring(currentPosition, boldMatch.Index)));
-                    }
-                    string boldText = boldMatch.Groups[1].Value;
-                    inlines.Add(new Bold(new Run(boldText)));
-                    currentPosition += boldMatch.Index + boldMatch.Length;
-                    continue;
-                }
-
-                Match italicMatch = Regex.Match(text.Substring(currentPosition), @"^\*(.+?)\*");
-                if (italicMatch.Success)
-                {
-                    if (italicMatch.Index > 0)
-                    {
-                        inlines.Add(new Run(text.Substring(currentPosition, italicMatch.Index)));
-                    }
-                    string italicText = italicMatch.Groups[1].Value;
-                    inlines.Add(new Italic(new Run(italicText)));
-                    currentPosition += italicMatch.Index + italicMatch.Length;
                     continue;
                 }
 
@@ -122,7 +165,8 @@ namespace TextEditor.Models.Parser
                     inlines.Add(new Run(text.Substring(currentPosition)));
                     break;
                 }
-                else if (nextSpecialChar > currentPosition)
+
+                if (nextSpecialChar > currentPosition)
                 {
                     inlines.Add(new Run(text.Substring(currentPosition, nextSpecialChar - currentPosition)));
                     currentPosition = nextSpecialChar;
@@ -137,6 +181,24 @@ namespace TextEditor.Models.Parser
             return inlines;
         }
 
+        private bool TryParseInlineElement(string text, ref int currentPosition, string pattern, Func<string, Inline> createInline, List<Inline> inlines)
+        {
+            var match = Regex.Match(text.Substring(currentPosition), pattern);
+            if (match.Success)
+            {
+                if (match.Index > 0)
+                {
+                    inlines.Add(new Run(text.Substring(currentPosition, match.Index)));
+                }
+
+                inlines.Add(createInline(match.Groups[1].Value));
+                currentPosition += match.Index + match.Length;
+                return true;
+            }
+
+            return false;
+        }
+
         private int FindNextSpecialChar(string text, int startIndex)
         {
             int[] positions = new[]
@@ -148,40 +210,11 @@ namespace TextEditor.Models.Parser
             return positions.Where(p => p >= 0).DefaultIfEmpty(-1).Min();
         }
 
-        private Block GetHeader(Match headerMatch)
-        {
-            int headerLevel = headerMatch.Groups[1].Length;
-            string headerText = headerMatch.Groups[2].Value;
-
-            Paragraph header = new Paragraph();
-            foreach (var inline in ParseInlineMarkdown(headerText))
-            {
-                header.Inlines.Add(inline);
-            }
-
-            header.FontWeight = FontWeights.Bold;
-            header.FontSize = 26 - (headerLevel * 2);
-            header.Margin = new Thickness(0, 10, 0, 5);
-
-            return header;
-        }
-
-        private ListItem GetListItem(string line)
-        {
-            string listItemText = line.TrimStart().Substring(2);
-            var paragraph = new Paragraph();
-            foreach (var inline in ParseInlineMarkdown(listItemText))
-            {
-                paragraph.Inlines.Add(inline);
-            }
-            return new ListItem(paragraph);
-        }
-
         private bool IsSimpleText(string text)
         {
-            return !string.IsNullOrWhiteSpace(text) 
-                && !Regex.IsMatch(text, @"^#{1,6}\s+") 
-                && !text.TrimStart().StartsWith("- ");
+            return !string.IsNullOrWhiteSpace(text) &&
+                   !Regex.IsMatch(text, @"^#{1,6}\s+") &&
+                   !text.TrimStart().StartsWith("- ");
         }
     }
 }
