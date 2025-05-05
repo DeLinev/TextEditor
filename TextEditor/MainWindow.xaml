@@ -31,8 +31,21 @@
             <Button 
                 x:Name="CreateBtn"
                 Content="Create file" 
+                Margin="0 0 0 10"
                 Click="CreateBtn_Click"
                 Height="30"/>
+            <ListBox x:Name="RecentFilesList"  
+                    ItemsSource="{Binding RecentFiles}"  
+                    SelectionChanged="RecentFilesList_SelectionChanged">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel>
+                            <TextBlock Text="{Binding Key}" FontWeight="Bold" />
+                            <TextBlock Text="{Binding Value}" Foreground="Gray" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </StackPanel>
 
         <Button 

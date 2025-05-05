@@ -5,13 +5,11 @@ namespace TextEditor.Models.FileManager
 {
     public class FileManager
     {
-        public string FileFilter { get; set; }
         private ISaveStrategy saveStrategy;
-
-        public FileManager(string fileFilter = "Text Files (*.txt)|*.txt|Markdown Files (*.md)|*.md")
+        public static string FileFilter { get; set; } = "Text Files (*.txt)|*.txt|Markdown Files (*.md)|*.md|All Files (*.*)|*.*";
+        public FileManager()
         {
             saveStrategy = new TextSaveStrategy();
-            FileFilter = fileFilter;
         }
 
         public void SetSaveStrategy(ISaveStrategy strategy)

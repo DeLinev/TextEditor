@@ -32,6 +32,7 @@ namespace TextEditor.UserControls
         public Stack<Command> UndoStack { get; set; }
 
         public event Action<UserControlTypes, Document> UserControlSwitched;
+        public event Action<KeyValuePair<string, string>> FileSaved;
 
         public void ExecuteCommand(Command command)
         {
@@ -159,7 +160,7 @@ namespace TextEditor.UserControls
             var fileManager = new FileManager();
             var saveFileDialog = new SaveFileDialog 
             {
-                Filter = fileManager.FileFilter,
+                Filter = FileManager.FileFilter,
                 DefaultExt = ".md",
                 FileName = CurrentDocument?.Path ?? "Untitled"
             };
@@ -172,6 +173,8 @@ namespace TextEditor.UserControls
                 if (isSaved)
                 {
                     MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var keyValuePair = new KeyValuePair<string, string>(saveFileDialog.SafeFileName, filePath);
+                    FileSaved?.Invoke(keyValuePair);
                 }
                 else
                 {

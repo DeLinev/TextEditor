@@ -26,6 +26,7 @@ namespace TextEditor.UserControls
         private Document currentDocument;
 
         public event Action<UserControlTypes, Document> UserControlSwitched;
+        public event Action<KeyValuePair<string, string>> FileSaved;
 
         private void UpdatePreview()
         {
@@ -46,8 +47,9 @@ namespace TextEditor.UserControls
             var fileManager = new FileManager();
             var saveFileDialog = new SaveFileDialog
             {
-                Filter = fileManager.FileFilter,
+                Filter = FileManager.FileFilter,
                 DefaultExt = ".md",
+                FileName = currentDocument?.Path ?? "Untitled"
             };
 
             bool? result = saveFileDialog.ShowDialog();
@@ -58,6 +60,8 @@ namespace TextEditor.UserControls
                 if (isSaved)
                 {
                     MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var keyValuePair = new KeyValuePair<string, string>(saveFileDialog.SafeFileName, filePath);
+                    FileSaved?.Invoke(keyValuePair);
                 }
                 else
                 {

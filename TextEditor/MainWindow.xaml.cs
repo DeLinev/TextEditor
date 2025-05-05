@@ -1,4 +1,6 @@
 ﻿using Microsoft.Win32;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,6 +21,7 @@ namespace TextEditor
             DataContext = this;
             userControlFactory = new UserControlFactory();
             CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, null, SwitchUserControl);
+            RecentFiles = new ObservableCollection<KeyValuePair<string, string>>();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -40,10 +43,29 @@ namespace TextEditor
                     if (currentUserControl is EditUserControl editUserControl)
                     {
                         currentEditUserControl = editUserControl;
+                        editUserControl.FileSaved += UpdateRecentFiles;
+                    }
+
+                    if (currentUserControl is PreviewUserControl previewUserControl)
+                    {
+                        previewUserControl.FileSaved += UpdateRecentFiles;
                     }
                 }
             }
         }
+
+        private ObservableCollection<KeyValuePair<string, string>> recentFiles;
+
+        public ObservableCollection<KeyValuePair<string, string>> RecentFiles
+        {
+            get { return recentFiles; }
+            set
+            {
+                recentFiles = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RecentFiles)));
+            }
+        }
+
 
         private void SwitchUserControl(UserControlTypes userControl, Document document)
         {
@@ -72,18 +94,45 @@ namespace TextEditor
             var fileManager = new FileManager();
             OpenFileDialog openFileDialog = new OpenFileDialog
             {
-                Filter = fileManager.FileFilter
+                Filter = FileManager.FileFilter
             };
 
             bool? result = openFileDialog.ShowDialog();
 
             if (result == true)
             {
-                string filePath = openFileDialog.FileName;
-                string content = await fileManager.Open(filePath);
-                var document = new Document(filePath, content);
-                CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
+                OpenFile(openFileDialog.FileName);
             }
+        }
+
+        private void RecentFilesList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ListBox listbox && listbox.SelectedItem is KeyValuePair<string, string> keyValue)
+            {
+                OpenFile(keyValue.Value);
+            }
+        }
+
+        private void UpdateRecentFiles(KeyValuePair<string, string> keyValuePair)
+        {
+            if (RecentFiles.Contains(keyValuePair))
+            {
+                RecentFiles.Remove(keyValuePair);
+            }
+
+            RecentFiles.Insert(0, keyValuePair);
+        }
+
+        private async void OpenFile(string filePath)
+        {
+            var fileName = System.IO.Path.GetFileName(filePath);
+            var keyValuePair = new KeyValuePair<string, string>(fileName, filePath);
+            UpdateRecentFiles(keyValuePair);
+
+            var fileManager = new FileManager();
+            string content = await fileManager.Open(filePath);
+            var document = new Document(filePath, content);
+            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
         }
     }
 }
