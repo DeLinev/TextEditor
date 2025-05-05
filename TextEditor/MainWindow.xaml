@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:TextEditor"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:MainWindow}"
-        Title="TextEditor" Height="450" Width="800">
+        Title="TextEditor" Height="450" Width="800" Icon="/icon.png">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10" />
