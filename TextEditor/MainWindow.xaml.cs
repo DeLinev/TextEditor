@@ -25,12 +25,10 @@ namespace TextEditor
             RecentFiles = new ObservableCollection<KeyValuePair<string, string>>();
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private UserControlFactory userControlFactory;
-
         private UserControl currentUserControl;
         private EditUserControl? currentEditUserControl;
+        public event PropertyChangedEventHandler PropertyChanged;
 
         public UserControl CurrentUserControl
         {
@@ -132,10 +130,11 @@ namespace TextEditor
             {
                 string content = await fileManager.Open(filePath);
                 var document = new Document(filePath, content);
+                CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
+
                 var fileName = Path.GetFileName(filePath);
                 var keyValuePair = new KeyValuePair<string, string>(fileName, filePath);
                 UpdateRecentFiles(keyValuePair);
-                CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
             }
             catch (Exception ex)
             {
