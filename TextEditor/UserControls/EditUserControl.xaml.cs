@@ -1,11 +1,13 @@
 ﻿using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using TextEditor.Models;
 using TextEditor.Models.Commands;
 using TextEditor.Models.FileManager;
+using TextEditor.Models.Parser;
 
 namespace TextEditor.UserControls
 {
@@ -136,6 +138,7 @@ namespace TextEditor.UserControls
             EditBtn.IsEnabled = false;
             PreviewBtn.IsEnabled = false;
             SaveBtn.IsEnabled = false;
+            SaveAsPdfBtn.IsEnabled = false;
             EditTextBox.Background = Brushes.LightGray;
             EditTextBox.Foreground = Brushes.Gray;
         }
@@ -179,6 +182,37 @@ namespace TextEditor.UserControls
                 else
                 {
                     MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private async void SaveAsPdfBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (CurrentDocument != null)
+            {
+                var markdownParser = new MarkdownParser();
+                FlowDocument doc = markdownParser.Parse(CurrentDocument.Content);
+
+                var fileManager = new FileManager();
+                fileManager.SetSaveStrategy(new PdfSaveStrategy());
+
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "PDF Files (*.pdf)|*.pdf",
+                    DefaultExt = ".pdf",
+                    FileName = "Untitled"
+                };
+
+                bool? result = saveFileDialog.ShowDialog();
+                if (result == true)
+                {
+                    string filePath = saveFileDialog.FileName;
+                    bool isSaved = await fileManager.Save(filePath, CurrentDocument.Content, doc);
+
+                    if (isSaved)
+                        MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    else
+                        MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

@@ -69,5 +69,33 @@ namespace TextEditor.UserControls
                 }
             }
         }
+
+        private async void SaveAsPdfBtn_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentDocument != null)
+            {
+                FlowDocument doc = markdownParser.Parse(currentDocument.Content);
+                var fileManager = new FileManager();
+                fileManager.SetSaveStrategy(new PdfSaveStrategy());
+                var saveFileDialog = new SaveFileDialog
+                {
+                    Filter = "PDF Files (*.pdf)|*.pdf",
+                    DefaultExt = ".pdf",
+                    FileName = "Untitled"
+                };
+
+                bool? result = saveFileDialog.ShowDialog();
+                if (result == true)
+                {
+                    string filePath = saveFileDialog.FileName;
+                    bool isSaved = await fileManager.Save(filePath, currentDocument.Content, doc);
+
+                    if (isSaved)
+                        MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    else
+                        MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
     }
 }
