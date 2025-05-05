@@ -35,8 +35,19 @@
                 Click="CreateBtn_Click"
                 Height="30"/>
             <ListBox x:Name="RecentFilesList"  
-                    ItemsSource="{Binding RecentFiles}"  
-                    SelectionChanged="RecentFilesList_SelectionChanged">
+                     ItemsSource="{Binding RecentFiles}"  
+                     SelectionChanged="RecentFilesList_SelectionChanged"
+                     MaxHeight="315">
+                <ListBox.Style>
+                    <Style TargetType="ListBox">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding RecentFiles.Count}" Value="0">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListBox.Style>
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <StackPanel>

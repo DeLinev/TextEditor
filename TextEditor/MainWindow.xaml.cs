@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using TextEditor.Models;
@@ -125,14 +126,22 @@ namespace TextEditor
 
         private async void OpenFile(string filePath)
         {
-            var fileName = System.IO.Path.GetFileName(filePath);
-            var keyValuePair = new KeyValuePair<string, string>(fileName, filePath);
-            UpdateRecentFiles(keyValuePair);
-
             var fileManager = new FileManager();
-            string content = await fileManager.Open(filePath);
-            var document = new Document(filePath, content);
-            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
+
+            try
+            {
+                string content = await fileManager.Open(filePath);
+                var document = new Document(filePath, content);
+                var fileName = Path.GetFileName(filePath);
+                var keyValuePair = new KeyValuePair<string, string>(fileName, filePath);
+                UpdateRecentFiles(keyValuePair);
+                CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error opening file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
         }
     }
 }
