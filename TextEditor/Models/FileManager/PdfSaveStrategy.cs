@@ -1,6 +1,9 @@
 ﻿using MigraDoc.DocumentObjectModel;
 using MigraDoc.Rendering;
 using System.Windows.Documents;
+using TextEditor.Models.FileManager.Helpers;
+using Paragraph = System.Windows.Documents.Paragraph;
+using Section = MigraDoc.DocumentObjectModel.Section;
 
 namespace TextEditor.Models.FileManager
 {
@@ -13,94 +16,64 @@ namespace TextEditor.Models.FileManager
 
             try
             {
-                var doc = new MigraDoc.DocumentObjectModel.Document();
-                var section = doc.AddSection();
-
-                foreach (var block in flowDocument.Blocks)
-                {
-                    if (block is System.Windows.Documents.Paragraph wpfParagraph)
-                    {
-                        var migraParagraph = section.AddParagraph();
-                        migraParagraph.Format.Font.Size = wpfParagraph.FontSize;
-                        ParseInlineContent(migraParagraph, wpfParagraph.Inlines);
-                    }
-                    else if (block is List wpfList)
-                    {
-                        foreach (ListItem listItem in wpfList.ListItems)
-                        {
-                            foreach (var itemBlock in listItem.Blocks)
-                            {
-                                if (itemBlock is System.Windows.Documents.Paragraph itemPara)
-                                {
-                                    var para = section.AddParagraph();
-                                    para.Format.LeftIndent = "0.5cm";
-
-                                    string marker = "• ";
-                                    para.AddFormattedText(marker, TextFormat.Bold);
-
-                                    ParseInlineContent(para, itemPara.Inlines);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                
-                var renderer = new PdfDocumentRenderer
-                {
-                    Document = doc
-                };
-                renderer.RenderDocument();
-                renderer.Save(filePath);
-
+                var document = CreatePdfDocument(flowDocument);
+                RenderAndSavePdf(document, filePath);
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
                 return false;
             }
-
         }
 
-        private void ParseInlineContent(MigraDoc.DocumentObjectModel.Paragraph migraParagraph, InlineCollection inlines)
+        private MigraDoc.DocumentObjectModel.Document CreatePdfDocument(FlowDocument flowDocument)
         {
-            foreach (var inline in inlines)
+            var document = new MigraDoc.DocumentObjectModel.Document();
+            var section = document.AddSection();
+
+            foreach (var block in flowDocument.Blocks)
             {
-                if (inline is Run run)
+                if (block is Paragraph wpfParagraph)
                 {
-                    var text = run.Text;
-                    var format = migraParagraph.AddFormattedText(text);
-
-                    if (run.FontWeight == System.Windows.FontWeights.Bold)
-                        format.Bold = true;
-
-                    if (run.FontStyle == System.Windows.FontStyles.Italic)
-                        format.Italic = true;
+                    var paragraph = section.AddParagraph();
+                    paragraph.Format.Font.Size = wpfParagraph.FontSize;
+                    FlowDocToPdfParser.Parse(paragraph, wpfParagraph.Inlines);
                 }
-                else if (inline is Bold bold)
+                else if (block is List wpfList)
                 {
-                    foreach (var child in bold.Inlines)
-                    {
-                        if (child is Run boldRun)
-                        {
-                            var format = migraParagraph.AddFormattedText(boldRun.Text);
-                            format.Bold = true;
-                        }
-                    }
+                    AddListToSection(section, wpfList);
                 }
-                else if (inline is Italic italic)
+            }
+
+            return document;
+        }
+
+        private void AddListToSection(Section section, List wpfList)
+        {
+            foreach (ListItem listItem in wpfList.ListItems)
+            {
+                foreach (var itemBlock in listItem.Blocks)
                 {
-                    foreach (var child in italic.Inlines)
+                    if (itemBlock is Paragraph itemParagraph)
                     {
-                        if (child is Run italicRun)
-                        {
-                            var format = migraParagraph.AddFormattedText(italicRun.Text);
-                            format.Italic = true;
-                        }
+                        var paragraph = section.AddParagraph();
+                        paragraph.Format.Font.Size = itemParagraph.FontSize;
+                        paragraph.Format.LeftIndent = "0.5cm";
+                        paragraph.AddFormattedText("• ", TextFormat.Bold);
+                        FlowDocToPdfParser.Parse(paragraph, itemParagraph.Inlines);
                     }
                 }
             }
         }
 
+        private void RenderAndSavePdf(MigraDoc.DocumentObjectModel.Document document, string filePath)
+        {
+            var renderer = new PdfDocumentRenderer
+            {
+                Document = document
+            };
+            renderer.RenderDocument();
+            renderer.Save(filePath);
+        }
     }
 }

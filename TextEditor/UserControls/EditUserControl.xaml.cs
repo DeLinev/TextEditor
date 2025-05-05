@@ -143,21 +143,6 @@ namespace TextEditor.UserControls
             EditTextBox.Foreground = Brushes.Gray;
         }
 
-        private void EnableUI()
-        {
-            EditTextBox.IsEnabled = true;
-            BoldBtn.IsEnabled = true;
-            ItalicBtn.IsEnabled = true;
-            HeaderBtn.IsEnabled = true;
-            ListBtn.IsEnabled = true;
-            UndoBtn.IsEnabled = true;
-            EditBtn.IsEnabled = true;
-            PreviewBtn.IsEnabled = true;
-            SaveBtn.IsEnabled = true;
-            EditTextBox.Background = Brushes.White;
-            EditTextBox.Foreground = Brushes.Black;
-        }
-
         private async void SaveBtn_Click(object sender, RoutedEventArgs e)
         {
             var fileManager = new FileManager();
