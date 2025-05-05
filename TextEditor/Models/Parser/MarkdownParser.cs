@@ -153,8 +153,9 @@ namespace TextEditor.Models.Parser
 
             while (currentPosition < text.Length)
             {
-                if (TryParseInlineElement(text, ref currentPosition, @"^\*\*(.+?)\*\*", boldText => new Bold(new Run(boldText)), inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, @"^\*(.+?)\*", italicText => new Italic(new Run(italicText)), inlines))
+                if (TryParseInlineElement(text, ref currentPosition, @"^\*\*\*(.+?)\*\*\*", CreateBoldItalic, inlines) ||
+                    TryParseInlineElement(text, ref currentPosition, @"^\*\*(.+?)\*\*", boldText => new Bold(new Run(boldText)), inlines) ||
+                    TryParseInlineElement(text, ref currentPosition, @"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", italicText => new Italic(new Run(italicText)), inlines))
                 {
                     continue;
                 }
@@ -203,6 +204,7 @@ namespace TextEditor.Models.Parser
         {
             int[] positions = new[]
             {
+                text.IndexOf("***", startIndex),
                 text.IndexOf("**", startIndex),
                 text.IndexOf('*', startIndex),
             };
@@ -215,6 +217,16 @@ namespace TextEditor.Models.Parser
             return !string.IsNullOrWhiteSpace(text) &&
                    !Regex.IsMatch(text, @"^#{1,6}\s+") &&
                    !text.TrimStart().StartsWith("- ");
+        }
+
+        private Run CreateBoldItalic(string text)
+        {
+            var run = new Run(text)
+            {
+                FontWeight = FontWeights.Bold,
+                FontStyle = FontStyles.Italic
+            };
+            return run;
         }
     }
 }
