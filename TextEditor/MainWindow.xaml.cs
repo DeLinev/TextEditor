@@ -25,7 +25,7 @@ namespace TextEditor
             RecentFiles = new ObservableCollection<KeyValuePair<string, string>>();
         }
 
-        private UserControlFactory userControlFactory;
+        private IUserControlFactory userControlFactory;
         private UserControl currentUserControl;
         private EditUserControl? currentEditUserControl;
         public event PropertyChangedEventHandler PropertyChanged;
