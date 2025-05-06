@@ -72,3 +72,56 @@
 ### Composition Over Inheritance
 У своєму коді я намагався компонувати об'єкти, спираючись на менші, повторно використовувані частини, замість створення глибоких дерев успадкування. Наприклад, FileManager використовує композицію через інтерфейс ISaveStrategy, що дозволяє динамічно змінювати стратегію збереження (TextSaveStrategy або PdfSaveStrategy).
 ### Program to Interfaces not Implementations
+Програма більше залежить від абстракцій ніж від конкретних класів. Клас [MainWindow](./TextEditor/MainWindow.xaml.cs) залежить від інтерфейсу [IUserControlFactory](./TextEditor/UserControls/UserControlFactory.cs#L7-L10), що дозволяє замінити реалізацію фабрики (UserControlFactory) на іншу без змін у MainWindow.
+### Fail Fast
+Написаний код перевіряє вхідні дані та стан об'єктів на ранніх етапах і відповідно реагує, якщо щось пішло не так. Наприклад, при збереженні поточного файлу програма [перевіряє чи користувач обрав шлях для збереження файлу](./TextEditor/UserControls/EditUserControl.xaml.cs#L156-L157) та чи [файл було успішно збережено](./TextEditor/UserControls/EditUserControl.xaml.cs#L160-L170).  
+Це дозволяє уникнути накопичення помилок і забезпечує передбачувану поведінку програми.
+## Design Patterns
+### Command
+Цей патерн перетворює запит на окремий об'єкт. Таке перетворення дозволяє передавати запити як аргументи методу, затримувати виконання запиту або ставити його в чергу, а також підтримувати undo-операції. 
+
+У програмі цей патерн реалізовано через абстрактний клас [Command](./TextEditor/Models/Commands/Command.cs), від якого наслідуються конкретні команди:
+- [BoldTextCommand](./TextEditor/Models/Commands/BoldTextCommand.cs)
+- [ItalicTextCommand](./TextEditor/Models/Commands/ItalicTextCommand.cs)
+- [InsertOnStartCommand](./TextEditor/Models/Commands/InsertOnStartCommand.cs)
+- [EditTextCommand](./TextEditor/Models/Commands/EditTextCommand.cs)
+
+Причини використання:
+- Інкапсуляція змін у документі. Команди (BoldTextCommand, ItalicTextCommand тощо) відповідають за окремі дії, які виконуються над текстом. Весь код для виконання і скасування зосереджений у класі-команді.
+
+- Можливість скасування дії. Завдяки стеку [UndoStack](./TextEditor/UserControls/EditUserControl.xaml.cs#L34) виконані команди зберігаються в історії. За потреби, програма викликає метод Undo() останньої команди, дозволяючи повернути стан тексту назад.
+
+- Гнучкість та масштабованість. Додавання нової команди (наприклад, для вставки зображення чи посилання) потребує лише створення нового класу-нащадка Command.
+### Strategy
+Цей патерн дозволяє визначити сімейство алгоритмів, помістити кожен з них в окремий клас і зробити їх об'єкти взаємозамінними.
+
+Де використано:
+- Інтерфейс [ISaveStrategy](./TextEditor/Models/FileManager/ISaveStrategy.cs) описує метод Save().
+- Конкретні реалізації:
+  - [TextSaveStrategy](./TextEditor/Models/FileManager/TextSaveStrategy.cs) — для збереження докунмента як .txt чи .md.
+  - [PdfSaveStrategy](./TextEditor/Models/FileManager/PdfSaveStrategy.cs) — для збереження документа у форматі PDF.
+- Клас FileManager — контекст, який містить посилання на об’єкт ISaveStrategy і делегує йому операцію збереження.
+
+Причини використання:
+- Розділення логіки збереження. Замість того, щоб у FileManager реалізовувати всі способи збереження, кожен формат винесено в окрему стратегію.
+- Можливість легкого розширення. Якщо потрібно додати збереження у новому форматі, як-от .docx або .html, достатньо реалізувати нову стратегію, не змінюючи існуючий код FileManager.
+- Дотримання принципів SOLID:
+  - Open/Closed Principle: нові способи збереження додаються без змін старого коду.
+  - Single Responsibility Principle: FileManager відповідає лише за делегування, а за сам процес збереження відповідають стратегії за стратегії.
+
+### Simple Factory
+Це патерн, який інкапсулює логіку створення об'єктів в одному місці, надаючи клієнту лише готові об'єкти без необхідності знати їх конкретні типи чи логіку створення.
+
+Де використано:
+- Інтерфейс [IUserControlFactory](./TextEditor/UserControls/UserControlFactory.cs#L7-L10) визначає метод CreateUserControl().
+- Клас [UserControlFactory](./TextEditor/UserControls/UserControlFactory.cs#L12-L33) реалізує цю фабрику:
+  - Створює EditUserControl або PreviewUserControl на основі enum [UserControlTypes](./TextEditor/UserControls/UserControlTypes.cs).
+- У MainWindow фабрика викликається для динамічного [створення UI-компонентів](./TextEditor/MainWindow.xaml.cs#L69-L78) без прив’язки до їх конкретного типу.
+
+Причини використання:
+- Ізоляція логіки створення об’єктів. MainWindow не створює UserControl напряму — це робить UserControlFactory.
+- Підтримка принципів SOLID:
+  - Single Responsibility: створення UserControl зосереджено в окремому класі.
+  - Open/Closed: додати новий тип UserControl можна, не змінюючи логіку в MainWindow.
+
+## Refactoring Techniques
