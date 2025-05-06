@@ -6,6 +6,13 @@ namespace TextEditor.Models.Parser
 {
     public class MarkdownParser
     {
+        private const string HeaderPattern = @"^(#{1,6})\s+(.+)$";
+        private const string ListSymbol = "- ";
+        private const string BoldPattern = @"^\*\*(.+?)\*\*";
+        private const string ItalicPattern = @"^(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)";
+        private const string BoldItalicPattern = @"^\*\*\*(.+?)\*\*\*";
+        private const int HeaderBaseSize = 26;
+
         public FlowDocument Parse(string markdownText)
         {
             if (string.IsNullOrEmpty(markdownText))
@@ -55,7 +62,7 @@ namespace TextEditor.Models.Parser
 
         private bool TryParseHeader(string line, out Block? block)
         {
-            var headerMatch = Regex.Match(line, @"^(#{1,6})\s+(.+)$");
+            var headerMatch = Regex.Match(line, HeaderPattern);
             if (headerMatch.Success)
             {
                 block = CreateHeaderBlock(headerMatch);
@@ -68,11 +75,11 @@ namespace TextEditor.Models.Parser
 
         private bool TryParseList(string[] lines, ref int lineIndex, out Block? block)
         {
-            if (lines[lineIndex].TrimStart().StartsWith("- "))
+            if (lines[lineIndex].TrimStart().StartsWith(ListSymbol))
             {
                 var list = new List();
 
-                while (lineIndex < lines.Length && lines[lineIndex].TrimStart().StartsWith("- "))
+                while (lineIndex < lines.Length && lines[lineIndex].TrimStart().StartsWith(ListSymbol))
                 {
                     list.ListItems.Add(CreateListItem(lines[lineIndex]));
                     lineIndex++;
@@ -114,7 +121,7 @@ namespace TextEditor.Models.Parser
             var header = new Paragraph
             {
                 FontWeight = FontWeights.Bold,
-                FontSize = 26 - (headerLevel * 2),
+                FontSize = HeaderBaseSize - (headerLevel * 2),
                 Margin = new Thickness(0, 10, 0, 5)
             };
 
@@ -153,9 +160,9 @@ namespace TextEditor.Models.Parser
 
             while (currentPosition < text.Length)
             {
-                if (TryParseInlineElement(text, ref currentPosition, @"^\*\*\*(.+?)\*\*\*", CreateBoldItalic, inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, @"^\*\*(.+?)\*\*", boldText => new Bold(new Run(boldText)), inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, @"^(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", italicText => new Italic(new Run(italicText)), inlines))
+                if (TryParseInlineElement(text, ref currentPosition, BoldItalicPattern, CreateBoldItalic, inlines) ||
+                    TryParseInlineElement(text, ref currentPosition, BoldPattern, boldText => new Bold(new Run(boldText)), inlines) ||
+                    TryParseInlineElement(text, ref currentPosition, ItalicPattern, italicText => new Italic(new Run(italicText)), inlines))
                 {
                     continue;
                 }
@@ -216,7 +223,7 @@ namespace TextEditor.Models.Parser
         {
             return !string.IsNullOrWhiteSpace(text) &&
                    !Regex.IsMatch(text, @"^#{1,6}\s+") &&
-                   !text.TrimStart().StartsWith("- ");
+                   !text.TrimStart().StartsWith(ListSymbol);
         }
 
         private Run CreateBoldItalic(string text)
