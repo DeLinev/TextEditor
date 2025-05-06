@@ -155,7 +155,7 @@ namespace TextEditor.Models.Parser
             {
                 if (TryParseInlineElement(text, ref currentPosition, @"^\*\*\*(.+?)\*\*\*", CreateBoldItalic, inlines) ||
                     TryParseInlineElement(text, ref currentPosition, @"^\*\*(.+?)\*\*", boldText => new Bold(new Run(boldText)), inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, @"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", italicText => new Italic(new Run(italicText)), inlines))
+                    TryParseInlineElement(text, ref currentPosition, @"^(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)", italicText => new Italic(new Run(italicText)), inlines))
                 {
                     continue;
                 }
