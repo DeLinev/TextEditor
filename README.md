@@ -119,9 +119,18 @@
 - У MainWindow фабрика викликається для динамічного [створення UI-компонентів](./TextEditor/MainWindow.xaml.cs#L69-L78) без прив’язки до їх конкретного типу.
 
 Причини використання:
+
 - Ізоляція логіки створення об’єктів. MainWindow не створює UserControl напряму — це робить UserControlFactory.
 - Підтримка принципів SOLID:
   - Single Responsibility: створення UserControl зосереджено в окремому класі.
   - Open/Closed: додати новий тип UserControl можна, не змінюючи логіку в MainWindow.
 
 ## Refactoring Techniques
+### Extract Method
+Щоразу як в коді з'являвся фрагмент, який можна згрупувати та використовувати багато разів, він виносився в окремий новий метод. Старий код замінявся викликом методу.
+Наприклад, клас [MarkdownParser](./TextEditor/Models/Parser/MarkdownParser.cs) складається з багатьох допоміжних методів, що опираються один на одного, як-от [ParseInlineMarkdown](./TextEditor/Models/Parser/MarkdownParser.cs#L149-L183), що викликає метод TryParseInlineElement декілька разів, щоб знайти елементи, що підпадають під регулярний вираз.
+### Decompose Conditional
+Коли в коді з'являлася складна умова в if-else, вона виокремлювалася в окремий метод. Наприклад клас [InsertOnStartCommand](./TextEditor/Models/Commands/InsertOnStartCommand.cs) мав складну умову в методі Execute, яка перевіряла чи слід вставляти на початок рядка ```symbol.ToString() + " "``` чи лише сам символ. Ця умова була винесена в окремий метод [InsertOneOrTwoSymbols](./TextEditor/Models/Commands/InsertOnStartCommand.cs#L43-L48), що збільшує читабельність коду
+### Extract Class
+Коли один клас виконує роботу двох, його слід розділити та створити новий клас і розмістити в ньому поля і методи, що відповідають за певну функціональність. Коли я створював клас [PdfSaveStrategy](./TextEditor/Models/FileManager/PdfSaveStrategy.cs), що відповідає за збереження файлу у .pdf форматі, я зрозумів, що він виконує зайву роботу, тому створив клас [FlowDocToPdfParser](./TextEditor/Models/FileManager/Helpers/FlowDocToPdfParser.cs), що парсить об'єкт FlowDocument у MigraDoc.DocumentObjectModel.Document.
+### 
