@@ -1,5 +1,5 @@
 # Текстовий редактор із підтримкою Markdown
-**Ліневич Денис**
+**Ліневич Денис ІПЗ-23-1**
 
 ## Запуск проекту
 В папці з проектом виконайте команду ```dotnet run```
@@ -70,4 +70,5 @@
 #### Dependency Inversion Principle 
 -	[FileManager](./TextEditor/Models/FileManager/FileManager.cs) залежить від абстракції [ISaveStrategy](./TextEditor/Models/FileManager/ISaveStrategy.cs), а не від конкретних реалізацій ([TextSaveStrategy](./TextEditor/Models/FileManager/TextSaveStrategy.cs), [PdfSaveStrategy](./TextEditor/Models/FileManager/PdfSaveStrategy.cs)).
 ### Composition Over Inheritance
-
+У своєму коді я намагався компонувати об'єкти, спираючись на менші, повторно використовувані частини, замість створення глибоких дерев успадкування. Наприклад, FileManager використовує композицію через інтерфейс ISaveStrategy, що дозволяє динамічно змінювати стратегію збереження (TextSaveStrategy або PdfSaveStrategy).
+### Program to Interfaces not Implementations
