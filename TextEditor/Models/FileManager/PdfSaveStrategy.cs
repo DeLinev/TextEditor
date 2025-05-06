@@ -9,6 +9,9 @@ namespace TextEditor.Models.FileManager
 {
     public class PdfSaveStrategy : ISaveStrategy
     {
+        private const string LeftIndent = "0.5cm";
+        private const string BulletSymbol = "• ";
+
         public async Task<bool> Save(string filePath, string markdownContent, FlowDocument? flowDocument)
         {
             if (flowDocument == null)
@@ -58,8 +61,8 @@ namespace TextEditor.Models.FileManager
                     {
                         var paragraph = section.AddParagraph();
                         paragraph.Format.Font.Size = itemParagraph.FontSize;
-                        paragraph.Format.LeftIndent = "0.5cm";
-                        paragraph.AddFormattedText("• ", TextFormat.Bold);
+                        paragraph.Format.LeftIndent = LeftIndent;
+                        paragraph.AddFormattedText(BulletSymbol, TextFormat.Bold);
                         FlowDocToPdfParser.Parse(paragraph, itemParagraph.Inlines);
                     }
                 }
