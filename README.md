@@ -137,6 +137,8 @@
 Коли є два чи більше класів зі спільними полями та методами слід створити для них спільний суперклас і перенесіть до нього всі однакові поля та методи. Базовий клас Command має поля [_editTextBox та _document](./TextEditor/Models/Commands/Command.cs#L7-L8), котрі є спільними для всіх команд (BoldTextCommand, ItalicTextCommand тощо)
 ### Replace Magic Literals with Symbolic Constant
 Якщо у коді використовується число або рядок, які мають певне значення, слід замінити це число на константу, яка має зрозумілу назву, що пояснює значення літерала. Клас [PdfSaveStrategy](./TextEditor/Models/FileManager/PdfSaveStrategy.cs#L12-L13) та [MarkdownParser](./TextEditor/Models/Parser/MarkdownParser.cs#L9-L14) мають константи, що використовуються у методах класу. Це підвищує читабельність коду та дає змогу швидко змінити значення константи.
+## Кількість рядків
+![LinesCount](./Screenshots/LinesCount.png)
 ## Скриншоти
 ![Editor](./Screenshots/Editor.png)
 ![Preview](./Screenshots/Preview.png)
