@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
+using TextEditor.Models.Parser.Interpreter;
 
 namespace TextEditor.Models.Parser
 {
@@ -8,10 +9,19 @@ namespace TextEditor.Models.Parser
     {
         private const string HeaderPattern = @"^(#{1,6})\s+(.+)$";
         private const string ListSymbol = "- ";
-        private const string BoldPattern = @"^\*\*(.+?)\*\*";
-        private const string ItalicPattern = @"^(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)";
-        private const string BoldItalicPattern = @"^\*\*\*(.+?)\*\*\*";
         private const int HeaderBaseSize = 26;
+
+        private readonly List<IMarkdownElement> _inlineElements;
+
+        public MarkdownParser()
+        {
+            _inlineElements = new List<IMarkdownElement>
+            {
+                new BoldItalicElement(),
+                new BoldElement(),
+                new ItalicElement()
+            };
+        }
 
         public FlowDocument Parse(string markdownText)
         {
@@ -160,26 +170,20 @@ namespace TextEditor.Models.Parser
 
             while (currentPosition < text.Length)
             {
-                if (TryParseInlineElement(text, ref currentPosition, BoldItalicPattern, CreateBoldItalic, inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, BoldPattern, boldText => new Bold(new Run(boldText)), inlines) ||
-                    TryParseInlineElement(text, ref currentPosition, ItalicPattern, italicText => new Italic(new Run(italicText)), inlines))
+                bool matched = false;
+
+                foreach (var element in _inlineElements)
                 {
-                    continue;
+                    var inline = element.Parse(text, ref currentPosition);
+                    if (inline != null)
+                    {
+                        inlines.Add(inline);
+                        matched = true;
+                        break;
+                    }
                 }
 
-                int nextSpecialChar = FindNextSpecialChar(text, currentPosition);
-                if (nextSpecialChar == -1)
-                {
-                    inlines.Add(new Run(text.Substring(currentPosition)));
-                    break;
-                }
-
-                if (nextSpecialChar > currentPosition)
-                {
-                    inlines.Add(new Run(text.Substring(currentPosition, nextSpecialChar - currentPosition)));
-                    currentPosition = nextSpecialChar;
-                }
-                else
+                if (!matched)
                 {
                     inlines.Add(new Run(text[currentPosition].ToString()));
                     currentPosition++;
@@ -189,51 +193,11 @@ namespace TextEditor.Models.Parser
             return inlines;
         }
 
-        private bool TryParseInlineElement(string text, ref int currentPosition, string pattern, Func<string, Inline> createInline, List<Inline> inlines)
-        {
-            var match = Regex.Match(text.Substring(currentPosition), pattern);
-            if (match.Success)
-            {
-                if (match.Index > 0)
-                {
-                    inlines.Add(new Run(text.Substring(currentPosition, match.Index)));
-                }
-
-                inlines.Add(createInline(match.Groups[1].Value));
-                currentPosition += match.Index + match.Length;
-                return true;
-            }
-
-            return false;
-        }
-
-        private int FindNextSpecialChar(string text, int startIndex)
-        {
-            int[] positions = new[]
-            {
-                text.IndexOf("***", startIndex),
-                text.IndexOf("**", startIndex),
-                text.IndexOf('*', startIndex),
-            };
-
-            return positions.Where(p => p >= 0).DefaultIfEmpty(-1).Min();
-        }
-
         private bool IsSimpleText(string text)
         {
             return !string.IsNullOrWhiteSpace(text) &&
                    !Regex.IsMatch(text, @"^#{1,6}\s+") &&
                    !text.TrimStart().StartsWith(ListSymbol);
-        }
-
-        private Run CreateBoldItalic(string text)
-        {
-            var run = new Run(text)
-            {
-                FontWeight = FontWeights.Bold,
-                FontStyle = FontStyles.Italic
-            };
-            return run;
         }
     }
 }
