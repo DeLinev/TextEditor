@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,37 +9,39 @@ using System.Windows.Controls;
 using TextEditor.Models;
 using TextEditor.Models.FileManager;
 using TextEditor.UserControls;
+using TextEditor.Strategies; 
 
 namespace TextEditor
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
+        private IUserControlFactory userControlFactory = null!;
+        private IUserControlSwitchStrategy userControlSwitchStrategy = null!;
+        private UserControl currentUserControl = null!;
+        private EditUserControl? currentEditUserControl = null!;
+        public event PropertyChangedEventHandler? PropertyChanged = null!;
+
         public MainWindow()
         {
             InitializeComponent();
             DataContext = this;
             userControlFactory = new UserControlFactory();
-            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, null, SwitchUserControl);
+            userControlSwitchStrategy = new DefaultUserControlSwitchStrategy(userControlFactory);
+
+            CurrentUserControl = userControlSwitchStrategy.GetUserControl(UserControlTypes.Edit, new Document());
             RecentFiles = new ObservableCollection<KeyValuePair<string, string>>();
         }
 
-        private IUserControlFactory userControlFactory;
-        private UserControl currentUserControl;
-        private EditUserControl? currentEditUserControl;
-        public event PropertyChangedEventHandler PropertyChanged;
-
         public UserControl CurrentUserControl
         {
-            get { return currentUserControl; }
+            get => currentUserControl;
             set
             {
                 if (currentUserControl != value)
                 {
                     currentUserControl = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentUserControl)));
+
                     if (currentUserControl is EditUserControl editUserControl)
                     {
                         currentEditUserControl = editUserControl;
@@ -53,18 +56,17 @@ namespace TextEditor
             }
         }
 
-        private ObservableCollection<KeyValuePair<string, string>> recentFiles;
+        private ObservableCollection<KeyValuePair<string, string>> recentFiles = new();
 
         public ObservableCollection<KeyValuePair<string, string>> RecentFiles
         {
-            get { return recentFiles; }
+            get => recentFiles;
             set
             {
                 recentFiles = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RecentFiles)));
             }
         }
-
 
         private void SwitchUserControl(UserControlTypes userControl, Document document)
         {
@@ -74,12 +76,12 @@ namespace TextEditor
                 return;
             }
 
-            CurrentUserControl = userControlFactory.CreateUserControl(userControl, document, SwitchUserControl);
+            CurrentUserControl = userControlSwitchStrategy.GetUserControl(userControl, document);
         }
 
         private void CreateBtn_Click(object sender, RoutedEventArgs e)
         {
-            CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, new Document(), SwitchUserControl);
+            CurrentUserControl = userControlSwitchStrategy.GetUserControl(UserControlTypes.Edit, new Document());
         }
 
         private void ToggleSideBarBtn_Click(object sender, RoutedEventArgs e)
@@ -130,7 +132,7 @@ namespace TextEditor
             {
                 string content = await fileManager.Open(filePath);
                 var document = new Document(filePath, content);
-                CurrentUserControl = userControlFactory.CreateUserControl(UserControlTypes.Edit, document, SwitchUserControl);
+                CurrentUserControl = userControlSwitchStrategy.GetUserControl(UserControlTypes.Edit, document);
 
                 var fileName = Path.GetFileName(filePath);
                 var keyValuePair = new KeyValuePair<string, string>(fileName, filePath);
