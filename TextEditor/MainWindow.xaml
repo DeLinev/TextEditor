@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TextEditor"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:MainWindow}"
+        d:DataContext="{d:DesignInstance Type=local:MainWindow, IsDesignTimeCreatable=True}"
         Title="TextEditor" Height="450" Width="800" Icon="/icon.png">
     <Grid>
         <Grid.ColumnDefinitions>
