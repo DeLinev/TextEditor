@@ -145,29 +145,25 @@ namespace TextEditor.UserControls
 
         private async void SaveBtn_Click(object sender, RoutedEventArgs e)
         {
-            var fileManager = new FileManager();
-            var saveFileDialog = new SaveFileDialog 
-            {
-                Filter = FileManager.FileFilter,
-                DefaultExt = ".md",
-                FileName = CurrentDocument?.Path ?? "Untitled"
-            };
+            var result = await FileSaveService.SaveFileAsync(
+                SaveFileType.Markdown,
+                EditTextBox.Text,
+                null,
+                CurrentDocument?.Path ?? "Untitled"
+            );
 
-            bool? result = saveFileDialog.ShowDialog();
-            if (result == true)
+            if (result.Success)
             {
-                string filePath = saveFileDialog.FileName;
-                bool isSaved = await fileManager.Save(filePath, EditTextBox.Text, null);
-                if (isSaved)
+                MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (result.FileName != null && result.FilePath != null)
                 {
-                    MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    var keyValuePair = new KeyValuePair<string, string>(saveFileDialog.SafeFileName, filePath);
+                    var keyValuePair = new KeyValuePair<string, string>(result.FileName, result.FilePath);
                     FileSaved?.Invoke(keyValuePair);
                 }
-                else
-                {
-                    MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            }
+            else if (!string.IsNullOrEmpty(result.ErrorMessage))
+            {
+                MessageBox.Show(result.ErrorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -177,27 +173,20 @@ namespace TextEditor.UserControls
             {
                 var markdownParser = new MarkdownParser();
                 FlowDocument doc = markdownParser.Parse(CurrentDocument.Content);
+                var result = await FileSaveService.SaveFileAsync(
+                    SaveFileType.Pdf,
+                    CurrentDocument.Content,
+                    doc,
+                    "Untitled"
+                );
 
-                var fileManager = new FileManager();
-                fileManager.SetSaveStrategy(new PdfSaveStrategy());
-
-                var saveFileDialog = new SaveFileDialog
+                if (result.Success)
                 {
-                    Filter = "PDF Files (*.pdf)|*.pdf",
-                    DefaultExt = ".pdf",
-                    FileName = "Untitled"
-                };
-
-                bool? result = saveFileDialog.ShowDialog();
-                if (result == true)
+                    MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else if (!string.IsNullOrEmpty(result.ErrorMessage))
                 {
-                    string filePath = saveFileDialog.FileName;
-                    bool isSaved = await fileManager.Save(filePath, CurrentDocument.Content, doc);
-
-                    if (isSaved)
-                        MessageBox.Show("File saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-                    else
-                        MessageBox.Show("Failed to save the file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    MessageBox.Show(result.ErrorMessage, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
